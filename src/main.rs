@@ -1,5 +1,6 @@
 use app::App;
 use ratatui::Terminal;
+use ratatui::backend::Backend;
 use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event, read};
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::{

@@ -1,4 +1,5 @@
-use ratatui::layout::Constraint;
+use crate::App;
+use ratatui::prelude::*;
 
 pub fn ui(frame: &mut Frame, app: &App) {
     let chunks = Layout::default()
@@ -8,16 +9,25 @@ pub fn ui(frame: &mut Frame, app: &App) {
             Constraint::Min(1),
             Constraint::Length(3),
         ])
-        .split(f.area());
+        .split(frame.area());
 }
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage((100 - percent_y / 2)),
+            Constraint::Percentage((100 - percent_y) / 2),
             Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y / 2)),
+            Constraint::Percentage((100 - percent_y) / 2),
         ])
         .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }
