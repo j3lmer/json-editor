@@ -1,5 +1,7 @@
 use crate::event::KeyCode;
+use crate::event::KeyEventKind;
 use app::App;
+use app::CurrentlyEditing;
 use ratatui::Terminal;
 use ratatui::backend::Backend;
 use ratatui::crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, read};
@@ -61,19 +63,59 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                 app::CurrentScreen::Main => match key.code {
                     KeyCode::Char('e') => {
                         app.current_screen = app::CurrentScreen::Editing;
-                        app.currently_editing = Some(app::CurrentlyEditing::Key);
+                        app.currently_editing = Some(CurrentlyEditing::Key);
                     }
                     KeyCode::Char('q') => {
                         app.current_screen = app::CurrentScreen::Exiting;
                     }
                     _ => {}
                 },
-                app::CurrentScreen::Editing => match key.code {
-                    KeyCode::Char('q') => {
+                app::CurrentScreen::Editing if key.kind == KeyEventKind::Press => match key.code {
+                    KeyCode::Enter => {
+                        if let Some(editing) = &app.currently_editing {
+                            match editing {
+                                CurrentlyEditing::Key => {
+                                    app.currently_editing = Some(CurrentlyEditing::Value);
+                                }
+                                CurrentlyEditing::Value => {
+                                    app.save_key_value();
+                                    app.current_screen = app::CurrentScreen::Main;
+                                    app.currently_editing = None;
+                                }
+                            }
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        if let Some(editing) = &app.currently_editing {
+                            match editing {
+                                CurrentlyEditing::Key => {
+                                    app.key_input.pop();
+                                }
+                                CurrentlyEditing::Value => {
+                                    app.value_input.pop();
+                                }
+                            }
+                        }
+                    }
+                    KeyCode::Esc => {
                         app.current_screen = app::CurrentScreen::Main;
                         app.currently_editing = None;
                     }
-
+                    KeyCode::Tab => {
+                        app.toggle_editing();
+                    }
+                    KeyCode::Char(value) => {
+                        if let Some(editing) = &app.currently_editing {
+                            match editing {
+                                CurrentlyEditing::Key => {
+                                    app.key_input.push(value);
+                                }
+                                CurrentlyEditing::Value => {
+                                    app.value_input.push(value);
+                                }
+                            }
+                        }
+                    }
                     _ => {}
                 },
                 app::CurrentScreen::Exiting => match key.code {
@@ -81,6 +123,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     KeyCode::Char('n') => return Ok(false),
                     _ => {}
                 },
+                _ => {}
             }
         }
     }

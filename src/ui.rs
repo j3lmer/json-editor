@@ -39,6 +39,46 @@ pub fn ui(frame: &mut Frame, app: &App) {
     frame.render_widget(mode_footer, footer_chunks[0]);
     frame.render_widget(key_notes_footer, footer_chunks[1]);
 
+    if let Some(editing) = &app.currently_editing {
+        let popup_block = Block::default()
+            .title("Enter a new key-value pair")
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::DarkGray));
+
+        let area = centered_rect(60, 25, frame.area());
+
+        frame.render_widget(popup_block, area);
+
+        let popup_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .margin(1)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(area);
+
+        let mut key_block = Block::default()
+            .title("Key")
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::DarkGray));
+
+        let mut value_block = Block::default()
+            .title("Value")
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::DarkGray));
+
+        let active_style = Style::default().bg(Color::LightYellow).fg(Color::Black);
+
+        match editing {
+            CurrentlyEditing::Key => key_block = key_block.style(active_style),
+            CurrentlyEditing::Value => value_block = value_block.style(active_style),
+        }
+
+        let key_text = Paragraph::new(app.key_input.clone()).block(key_block);
+        frame.render_widget(key_text, popup_chunks[0]);
+
+        let value_text = Paragraph::new(app.value_input.clone()).block(value_block);
+        frame.render_widget(value_text, popup_chunks[1]);
+    }
+
     // handle the exit screen
     if let CurrentScreen::Exiting = app.current_screen {
         frame.render_widget(Clear, frame.area()); //this clears the entire screen and anything already drawn
