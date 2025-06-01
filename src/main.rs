@@ -1,7 +1,8 @@
+use crate::event::KeyCode;
 use app::App;
 use ratatui::Terminal;
 use ratatui::backend::Backend;
-use ratatui::crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event, read};
+use ratatui::crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, read};
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
@@ -28,13 +29,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let res = run_app(&mut terminal, &mut app);
 
     //Nazorg
-    disable_raw_mode();
+    disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
-    terminal.show_cursor();
+
+    terminal.show_cursor()?;
 
     if let Ok(do_print) = res {
         if do_print {
@@ -51,7 +53,35 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
     loop {
         terminal.draw(|f| ui(f, app))?;
         if let Event::Key(key) = read()? {
-            dbg!(key.code)
+            if key.kind == event::KeyEventKind::Release {
+                continue;
+            }
+
+            match app.current_screen {
+                app::CurrentScreen::Main => match key.code {
+                    KeyCode::Char('e') => {
+                        app.current_screen = app::CurrentScreen::Editing;
+                        app.currently_editing = Some(app::CurrentlyEditing::Key);
+                    }
+                    KeyCode::Char('q') => {
+                        app.current_screen = app::CurrentScreen::Exiting;
+                    }
+                    _ => {}
+                },
+                app::CurrentScreen::Editing => match key.code {
+                    KeyCode::Char('q') => {
+                        app.current_screen = app::CurrentScreen::Main;
+                        app.currently_editing = None;
+                    }
+
+                    _ => {}
+                },
+                app::CurrentScreen::Exiting => match key.code {
+                    KeyCode::Char('y') => return Ok(true),
+                    KeyCode::Char('n') => return Ok(false),
+                    _ => {}
+                },
+            }
         }
     }
 }
