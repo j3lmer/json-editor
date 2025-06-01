@@ -14,68 +14,20 @@ pub fn ui(frame: &mut Frame, app: &App) {
         ])
         .split(frame.area());
 
-    let title = get_title();
-
     // render the title
-    frame.render_widget(title, chunks[0]);
-
-    let list = get_list(app);
+    frame.render_widget(get_title(), chunks[0]);
 
     // render the list
-    //
-    frame.render_widget(list, chunks[1]);
+    frame.render_widget(get_list(app), chunks[1]);
 
     // create navigation
-    let current_navigation_text = vec![
-        // The first half of the text
-        match app.current_screen {
-            CurrentScreen::Main => Span::styled("Normal Mode", Style::default().fg(Color::Green)),
-            CurrentScreen::Editing => {
-                Span::styled("Editing Mode", Style::default().fg(Color::Yellow))
-            }
-            CurrentScreen::Exiting => Span::styled("Exiting", Style::default().fg(Color::LightRed)),
-        }
-        .to_owned(),
-        // A white divider bar to separate the two sections
-        Span::styled(" | ", Style::default().fg(Color::White)),
-        // The final section of the text, with hints on what the user is editing
-        {
-            if let Some(editing) = &app.currently_editing {
-                match editing {
-                    CurrentlyEditing::Key => {
-                        Span::styled("Editing Json Key", Style::default().fg(Color::Green))
-                    }
-                    CurrentlyEditing::Value => {
-                        Span::styled("Editing Json Value", Style::default().fg(Color::LightGreen))
-                    }
-                }
-            } else {
-                Span::styled("Not Editing Anything", Style::default().fg(Color::DarkGray))
-            }
-        },
-    ];
+    let current_navigation_text = get_nav_text(app);
 
     let mode_footer = Paragraph::new(Line::from(current_navigation_text))
         .block(Block::default().borders(Borders::ALL));
 
-    // create current keys hint
-    let current_keys_hint = {
-        match app.current_screen {
-            CurrentScreen::Main => Span::styled(
-                "(q) to quit / (e) to make new pair",
-                Style::default().fg(Color::Red),
-            ),
-            CurrentScreen::Editing => Span::styled(
-                "(ESC) to cancel/(Tab) to switch boxes/enter to complete",
-                Style::default().fg(Color::Red),
-            ),
-            CurrentScreen::Exiting => Span::styled(
-                "(q) to quit / (e) to make new pair",
-                Style::default().fg(Color::Red),
-            ),
-        }
-    };
-
+    //  current keys hint
+    let current_keys_hint = get_current_keys_hint(app);
     let key_notes_footer =
         Paragraph::new(Line::from(current_keys_hint)).block(Block::default().borders(Borders::ALL));
 
@@ -87,7 +39,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
     frame.render_widget(mode_footer, footer_chunks[0]);
     frame.render_widget(key_notes_footer, footer_chunks[1]);
 
-    // render the exit screen
+    // handle the exit screen
     if let CurrentScreen::Exiting = app.current_screen {
         frame.render_widget(Clear, frame.area()); //this clears the entire screen and anything already drawn
         let popup_block = Block::default()
@@ -138,11 +90,59 @@ fn get_list_item<'a>(key: &'a str, value: &'a str) -> ListItem<'a> {
     )))
 }
 
-fn get_list(app: &App) -> List<'_> {
+fn get_list(app: &App) -> List {
     let list_items = get_list_items(app);
     let list = List::new(list_items);
 
     list
+}
+
+fn get_nav_text(app: &App) -> Vec<Span> {
+    vec![
+        // The first half of the text
+        match app.current_screen {
+            CurrentScreen::Main => Span::styled("Normal Mode", Style::default().fg(Color::Green)),
+            CurrentScreen::Editing => {
+                Span::styled("Editing Mode", Style::default().fg(Color::Yellow))
+            }
+            CurrentScreen::Exiting => Span::styled("Exiting", Style::default().fg(Color::LightRed)),
+        }
+        .to_owned(),
+        // A white divider bar to separate the two sections
+        Span::styled(" | ", Style::default().fg(Color::White)),
+        // The final section of the text, with hints on what the user is editing
+        {
+            if let Some(editing) = &app.currently_editing {
+                match editing {
+                    CurrentlyEditing::Key => {
+                        Span::styled("Editing Json Key", Style::default().fg(Color::Green))
+                    }
+                    CurrentlyEditing::Value => {
+                        Span::styled("Editing Json Value", Style::default().fg(Color::LightGreen))
+                    }
+                }
+            } else {
+                Span::styled("Not Editing Anything", Style::default().fg(Color::DarkGray))
+            }
+        },
+    ]
+}
+
+fn get_current_keys_hint(app: &App) -> Span {
+    match app.current_screen {
+        CurrentScreen::Main => Span::styled(
+            "(q) to quit / (e) to make new pair",
+            Style::default().fg(Color::Red),
+        ),
+        CurrentScreen::Editing => Span::styled(
+            "(ESC) to cancel/(Tab) to switch boxes/enter to complete",
+            Style::default().fg(Color::Red),
+        ),
+        CurrentScreen::Exiting => Span::styled(
+            "(q) to quit / (e) to make new pair",
+            Style::default().fg(Color::Red),
+        ),
+    }
 }
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
